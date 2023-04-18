@@ -1,6 +1,6 @@
 # Smoothed Particle Hydrodynamics (SPH) Two-Phase Bubble Fluid Simulation with WebGL
 
-**See a live demo here:** https://sweet-pixie-695a4b.netlify.app
+**See a live demo here:** https://ricclql.github.io/COMP559-Bubble-SPH/
 
 - For COMP 559 @ McGill University.
 - Implementation of a two-phase SPH fluid, with buoyancy, cohesion and drag forces on the light air.
