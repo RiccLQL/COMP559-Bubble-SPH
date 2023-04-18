@@ -74,10 +74,10 @@ function createScene() {
     renderer.setSize(width * zoomX, height * zoomY);
 
     material = new THREE.MeshBasicMaterial( { color: 0x11bbff } );
-    circle = new THREE.CircleBufferGeometry(1, 4);
+    circle = new THREE.CircleBufferGeometry(2, 4);
 
     lightmat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    lightcircle = new THREE.CircleBufferGeometry(1, 4);
+    lightcircle = new THREE.CircleBufferGeometry(2, 4);
 
     scene = new THREE.Scene();
     renderer.render(scene, camera);
