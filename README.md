@@ -1,6 +1,6 @@
 # Smoothed Particle Hydrodynamics (SPH) Two-Phase Bubble Fluid Simulation with WebGL
 
-**See a live demo here:** https://sweet-pixie-695a4b.netlify.app/
+#### See a live demo here: https://sweet-pixie-695a4b.netlify.app/
 
 - For COMP 559 @ McGill University.
 - Implementation of a two-phase SPH fluid, with buoyancy, cohesion and drag forces on the light air.
@@ -9,10 +9,11 @@
 - Responds to mouse movement on desktop, and touch input on mobile.
 - Please use a browser that supports WebGL (like Google Chrome).
 
-If you'd like to run the code locally on your computer, follow these steps:
+#### If you'd like to run the code locally on your computer, follow these steps:
+
 First, make sure you install node.js and npm.
 
-On a command line interface:
+On a command line interface,
 - `git clone https://github.com/RiccLQL/COMP559-Bubble-SPH`
 - `cd COMP559-Bubble-SPH`
 - `npm install http-server -g`
