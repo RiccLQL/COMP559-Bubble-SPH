@@ -14,8 +14,8 @@ let windowMovementInterval = -1;
 let paused = false;
 let gui = new GUI();
 let fluidParams = {
-    NumParticles: 1000,
-    ParticleMass: 10.0,
+    NumWaterParticles: 8000,
+    WaterDensity: 1000.0,
     GasConstant: 120.0,
     RestDensity: 5,
     Viscosity: 3,
@@ -25,8 +25,10 @@ let fluidParams = {
     SetDefaults: function() { /* dummy */ } 
 }
 let lightFluidParams = {
-    NumParticles: 1000,
-    ParticleMass: 10.0,
+    NumAirParticles: 600,
+    Cohesion: 2,
+    Buoyancy: 14,
+    AirDensity: 1.0,
     GasConstant: 120.0,
     RestDensity: 5,
     Viscosity: 3,
@@ -39,8 +41,8 @@ let lightFluidParams = {
 function init() {
     createScene();
     attachToDocument();
-    setNumParticles(fluidParams['NumParticles']);
-    setLightParticles();
+    setNumParticles(fluidParams['NumWaterParticles']);
+    setLightParticles(lightFluidParams['NumAirParticles']);
     addGUI();
     doLoop();
 }
@@ -53,7 +55,7 @@ function reinit() {
     initialOrientation = (screen.orientation || defaultOrientation).angle;
     computeWindowArea();
     engine.init(screen.width, screen.height, left, right, bottom, top);
-    setNumParticles(fluidParams['NumParticles']);
+    setNumParticles(fluidParams['NumWaterParticles']);
     setLightParticles();
     doLoop();
 }
@@ -74,10 +76,10 @@ function createScene() {
     renderer.setSize(width * zoomX, height * zoomY);
 
     material = new THREE.MeshBasicMaterial( { color: 0x11bbff } );
-    circle = new THREE.CircleBufferGeometry(2, 4);
+    circle = new THREE.CircleBufferGeometry(4, 16);
 
     lightmat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    lightcircle = new THREE.CircleBufferGeometry(2, 4);
+    lightcircle = new THREE.CircleBufferGeometry(4, 16);
 
     scene = new THREE.Scene();
     renderer.render(scene, camera);
@@ -230,8 +232,8 @@ function setNumParticles(n) {
     }
 }
 
-function setLightParticles() {
-    let n = lightFluidParams.NumParticles;
+function setLightParticles(n) {
+    // let n = lightFluidParams.NumParticles;
     let i0 = 0;
     if (lightmeshes == undefined) {
         lightmeshes = new Array(n);
@@ -256,15 +258,23 @@ function setLightParticles() {
 }
 
 function addGUI() {
-    gui.add(fluidParams, 'NumParticles', 0, 10000).step(10).onFinishChange(function(n) {
+    gui.add(fluidParams, 'NumWaterParticles', 0, 10000).step(10).onFinishChange(function(n) {
         setNumParticles(n);
     });
-    gui.add(fluidParams, 'ParticleMass', 1, 1000).onChange(updateFluidProperties);
+    gui.add(lightFluidParams, 'NumAirParticles', 0, 5000).step(10).onFinishChange(function(n) {
+        setLightParticles(n);
+    })
+    gui.add(fluidParams, 'WaterDensity', 1, 1000).onChange(updateFluidProperties);
     gui.add(fluidParams, 'GasConstant', 1, 1000).onChange(updateFluidProperties);
-    gui.add(fluidParams, 'RestDensity', 0, 10).onChange(updateFluidProperties);
+    // gui.add(fluidParams, 'RestDensity', 0, 10).onChange(updateFluidProperties);
     gui.add(fluidParams, 'Viscosity', 0, 10).onChange(updateFluidProperties);;
     gui.add(fluidParams, 'GravityX', -100, 100).step(10).onChange(updateGravity);
     gui.add(fluidParams, 'GravityY', -100, 100).step(10).onChange(updateGravity);
+
+    gui.add(lightFluidParams, 'Cohesion', 0, 15).onChange(updateLightFluidProperties);
+    // gui.add(lightFluidParams, 'Buoyancy', 5, 70).onChange(updateLightFluidProperties);
+    gui.add(lightFluidParams, 'AirDensity', 1, 100).onChange(updateLightFluidProperties);
+
     gui.addColor(fluidParams, 'Color').onChange(function(c) {
         material.color.set(c);
     });
@@ -275,7 +285,8 @@ function addGUI() {
                 controller.setValue(controller.initialValue);
             }
         }
-        setNumParticles(fluidParams['NumParticles']);
+        setNumParticles(fluidParams['NumWaterParticles']);
+        setLightParticles(lightFluidParams['NumAirParticles']);
     });
 }
 
@@ -284,11 +295,17 @@ function updateGravity() {
 }
 
 function updateFluidProperties() {
-    let mass = fluidParams['ParticleMass'];
+    let density = fluidParams['WaterDensity'];
     let gasConstant = fluidParams['GasConstant'];
-    let restDensity = fluidParams['RestDensity'];
+    // let restDensity = fluidParams['RestDensity'];
     let viscosity = fluidParams['Viscosity']
-    engine.setFluidProperties(mass, gasConstant, restDensity, viscosity);
+    engine.setFluidProperties(density, gasConstant, viscosity);
+}
+
+function updateLightFluidProperties() {
+    let density = lightFluidParams['AirDensity'];
+    let cohesion = lightFluidParams['Cohesion'];
+    engine.setLightFluidProperties(density, cohesion);
 }
 
 function doLoop() {

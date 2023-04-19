@@ -14,10 +14,16 @@ let Engine = (function() {
         // Note that making these properties into an array did not improve performance,
         // at least not as benchmarked in Chrome.
 
-        this.reset = function() {
+        this.resetWater = function() {
             this.Fx = 0;
             this.Fy = 0;
-            this.rho = this.m * Wpoly6(0);
+            this.rho = mWater * Wpoly6(0);;
+        }
+
+        this.resetAir = function() {
+            this.Fx = 0;
+            this.Fy = 0;
+            this.rho = mAir * Wpoly6(0);;
         }
     }
 
@@ -133,9 +139,10 @@ let Engine = (function() {
     let Wpoly6_coeff = 315.0 / (64 * Math.PI * h9);
     let Wspiky_grad_coeff = -45.0 / (Math.PI * h6);
     let Wvisc_lapl_coeff = 45.0 / (Math.PI * h5);
-    let m = 10.0;	    // Particle mass
+    // let m = 10.0;	    // Particle mass
     let k = 120;				// Gas constant
-    let rho0 = 0;			// Rest density
+    let rho0Water = 1000;
+    let rho0Air = 100;			// Rest density
     let mu = 3;				// Viscosity
     let gx = 0;				// Gravity-x
     let gy = -30;				// Gravity-y
@@ -152,12 +159,13 @@ let Engine = (function() {
     let forceVx = 0;
     let forceVy = 0;
 
-    let kmax = 35;
-    let kc = 12;
-    let kb = 70;
+    let kmax = 6;
+    let kc = 5 / rho0Air;
+    let kb = 14;
     let kdAir = 2;
     let kdWater = 0.5;
-    let mAir = 1.0;
+    let mWater = rho0Water / ((0.5 * h)**3)
+    let mAir = rho0Air / ((0.5 * h)**3);
 
     // assumption: r2 is less than h2
     function Wpoly6(r2) {
@@ -185,9 +193,10 @@ let Engine = (function() {
     function AddDensity(p1, p2) {
         let r2 = dist2(p1, p2);
         if (r2 < h2) {
-            let temp = m * Wpoly6(r2);
-            p1.rho += temp;
-            p2.rho += temp;
+            let temp1 = p1.m * Wpoly6(r2);
+            let temp2 = p2.m * Wpoly6(r2);
+            p1.rho += temp1;
+            p2.rho += temp2;
         }
     }
 
@@ -220,7 +229,7 @@ let Engine = (function() {
                         AddDensity(p1, p2);
                     }
                 }
-                p1.P = Math.max(k * (p1.rho - rho0), 0);
+                p1.P = Math.max(k * (p1.rho - rho0Water), 0);
             }
 
             for (let i = 0; i < cell.numLightParticles; i++) {
@@ -250,7 +259,7 @@ let Engine = (function() {
                         AddDensity(p1, p2);
                     }
                 }
-                p1.P = Math.max(k * (p1.rho - rho0), 0);
+                p1.P = Math.max(k * (p1.rho - rho0Air), 0);
             }
         }
     }
@@ -260,7 +269,7 @@ let Engine = (function() {
         if (r2 < h2) {
             let r = Math.sqrt(r2) + 1e-6; // add a tiny bit to avoid divide by zero
             // Eqn. 2.23 pressure-force
-            let temp1 = m * (p2.P + p1.P) / (2 * p2.rho) * Wspiky_grad2(r);
+            let temp1 = p2.m * (p2.P + p1.P) / (2 * p2.rho) * Wspiky_grad2(r);
             let Fx = temp1 * (p2.x - p1.x);
             let Fy = temp1 * (p2.y - p1.y);
             // Eqn. 2.26 viscosity-force
@@ -275,7 +284,7 @@ let Engine = (function() {
         let r2 = dist2(p1, p2);
         if (r2 < h2) {
             let r = Math.sqrt(r2) + 1e-6;
-            let temp2 = mu * m * Wvisc_lapl(r) / p2.rho;
+            let temp2 = mu * p2.m * Wvisc_lapl(r) / p2.rho;
             let Fx = temp2 * (p2.Vx - p1.Vx);
             let Fy = temp2 * (p2.Vy - p1.Vy);
             p1.Fx += Fx;
@@ -301,8 +310,8 @@ let Engine = (function() {
 
             // for (let i = 0; i < neighbor.numLightParticles; i++) {
         // let p2 = neighbor.lightParticles[i];
-        sumCohX += p2.rho * (p1.x - p2.x);
-        sumCohY += p2.rho * (p1.y - p2.y);
+        sumCohX += p2.m * (p1.x - p2.x);
+        sumCohY += p2.m * (p1.y - p2.y);
 
         let CohFx = -kc * p1.m * sumCohX;
         let CohFy = -kc * p1.m * sumCohY;
@@ -352,8 +361,8 @@ let Engine = (function() {
         // add forces
         p1.Fx += DragFx;
         p1.Fy += DragFy;
-        // p2.Fx -= DragFx;
-        // p2.Fy -= DragFy;
+        p2.Fx -= DragFx;
+        p2.Fy -= DragFy;
     }
 
     function CalcAirForces() {
@@ -362,10 +371,26 @@ let Engine = (function() {
                 const p1 = cell.lightParticles[i];
                 let numNeighbors = 0;
                 let numWaterAbove = 0;
+
+                for (let j = i + 1; j < cell.numParticles; j++) {
+                    const p2 = cell.particles[j];
+                    //AddPressureForce(p1, p2);
+                    if (p1.y < p2.y) numWaterAbove++;
+                }
+
+                for (let neighbor of cell.halfNeighbors) {
+                    for (let j = 0; j < neighbor.numParticles; j++) {
+                        const p2 = neighbor.particles[j];
+                        //AddPressureForce(p1, p2);
+                        if (p1.y < p2.y) numWaterAbove++;
+                    }
+                }
+
                 for (let j = i + 1; j < cell.numLightParticles; j++) {
                     const p2 = cell.lightParticles[j];
-                    AddCohesionForces(p1, p2);
+                    if (numWaterAbove >= 5) AddCohesionForces(p1, p2);
                     AddPressureForce(p1, p2);
+                    //AddViscosityForce(p1, p2);
                     numNeighbors++;
                     //AddDragForces(p1, p2, true);
                 }
@@ -373,30 +398,33 @@ let Engine = (function() {
                 for (let j = i + 1; j < cell.numParticles; j++) {
                     const p2 = cell.particles[j];
                     //AddPressureForce(p1, p2);
-                    if (p1.y < p2.y) numWaterAbove++;
-                    AddDragForces(p1, p2, false);
+                    // if (p1.y < p2.y) numWaterAbove++;
+                    if (numWaterAbove >= 5) AddDragForces(p1, p2, false);
+                    numNeighbors++;
                 }
 
                 for (let neighbor of cell.halfNeighbors) {
                     for (let j = 0; j < neighbor.numLightParticles; j++) {
                         const p2 = neighbor.lightParticles[j];
-                        AddCohesionForces(p1, p2);
+                        if (numWaterAbove >= 5) AddCohesionForces(p1, p2);
                         AddPressureForce(p1, p2);
+                        //AddViscosityForce(p1, p2);
                         numNeighbors++;
-                        // AddDragForces(p1, p2, true);
+                        //AddDragForces(p1, p2, true);
                     }
 
                     for (let j = 0; j < neighbor.numParticles; j++) {
                         const p2 = neighbor.particles[j];
                         //AddPressureForce(p1, p2);
-                        if (p1.y < p2.y) numWaterAbove++;
-                        AddDragForces(p1, p2, false);
+                        // if (p1.y < p2.y) numWaterAbove++;
+                        if (numWaterAbove != 0) AddDragForces(p1, p2, false);
+                        numNeighbors++;
                     }
                 }
                 // buoyancy
                 let BuoyFx = 0;
                 let BuoyFy = 0;
-                if (numWaterAbove === 0) {
+                if (numWaterAbove < 5) {
                 //     // foam
                     BuoyFx = -p1.m * gx;
                     BuoyFy = -p1.m * gy;
@@ -405,8 +433,7 @@ let Engine = (function() {
                     BuoyFx = -p1.m * kb * (kmax - ((kmax - 1) * Math.exp(-0.1 * numNeighbors))) * gx;
                     BuoyFy = -p1.m * kb * (kmax - ((kmax - 1) * Math.exp(-0.1 * numNeighbors))) * gy;
                 }
-
-                // p1.Fx += BuoyFx;
+                p1.Fx += BuoyFx;
                 p1.Fy += BuoyFy;
 
                 AddWallForces(p1);
@@ -418,18 +445,18 @@ let Engine = (function() {
 
         if (p1.x < xmin + h) {
             let r = p1.x - xmin;
-            p1.Fx -= m * p1.P / p1.rho * Wspiky_grad2(r) * r;
+            p1.Fx -= p1.m * p1.P / p1.rho * Wspiky_grad2(r) * r;
         }
         else if (p1.x > xmax - h) {
             let r = xmax - p1.x;
-            p1.Fx += m * p1.P / p1.rho * Wspiky_grad2(r) * r;
+            p1.Fx += p1.m * p1.P / p1.rho * Wspiky_grad2(r) * r;
         }
         if (p1.y < ymin + h) {
             let r = p1.y - ymin;
-            p1.Fy -= m * p1.P / p1.rho * Wspiky_grad2(r) * r;
+            p1.Fy -= p1.m * p1.P / p1.rho * Wspiky_grad2(r) * r;
         } else if (p1.y > ymax - h) {
             let r = ymax - p1.y;
-            p1.Fy += m * p1.P / p1.rho * Wspiky_grad2(r) * r;
+            p1.Fy += p1.m * p1.P / p1.rho * Wspiky_grad2(r) * r;
         }
     }
 
@@ -457,6 +484,7 @@ let Engine = (function() {
                     const p2 = cell.lightParticles[j];
                     //AddPressureForce(p1, p2);
                     // AddViscosityForce(p1, p2);
+                    //AddDragForces(p1, p2, false);
                 }
 
                 for (let neighbor of cell.halfNeighbors) {
@@ -464,6 +492,7 @@ let Engine = (function() {
                         const p2 = neighbor.lightParticles[j];
                         //AddPressureForce(p1, p2);
                         // AddViscosityForce(p1, p2);
+                        //AddDragForces(p1, p2, false);
                     }
                 }
                 
@@ -522,7 +551,7 @@ let Engine = (function() {
 
             grid.addParticleToCell(p);
             
-            p.reset();
+            p.resetWater();
         }
 
         for (let p of lightParticles) {
@@ -553,7 +582,7 @@ let Engine = (function() {
 
             grid.addLightParticleToCell(p);
             
-            p.reset();
+            p.resetAir();
         }
     }
 
@@ -601,7 +630,7 @@ let Engine = (function() {
             }
             for (let i = i0; i < n; i++) {
                 particles[i] = new Particle();
-                particles[i].m = m;
+                particles[i].m = mWater;
                 particles[i].rho = particles[i].m * Wpoly6(0);
             }
         },
@@ -665,11 +694,15 @@ let Engine = (function() {
             gy = gravityY;
         },
 
-        setFluidProperties: function(mass, gasConstant, restDensity, viscosity) {
-            m = mass;
+        setFluidProperties: function(density, gasConstant, viscosity) {
+            rho0Water = density;
             k = gasConstant;
-            rho0 = restDensity;
             mu = viscosity;
+        },
+
+        setLightFluidProperties: function(density, cohesion) {
+            kc = cohesion / rho0Air;
+            rho0Air = density;
         }
     }
 })();
