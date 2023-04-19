@@ -9,13 +9,17 @@
 - Responds to mouse movement on desktop, and touch input on mobile.
 - Please use a browser that supports WebGL (like Google Chrome).
 
-If you'd like to run the code locally on your computer, follow these steps on a command line interface:
+If you'd like to run the code locally on your computer, follow these steps:
+First, make sure you install node.js and npm.
+
+On a command line interface:
 - `git clone https://github.com/RiccLQL/COMP559-Bubble-SPH`
 - `cd COMP559-Bubble-SPH`
 - `npm install http-server -g`
 - Make sure you are in the folder of the index.html file, and run `http-server` in the terminal.
+- Visit `http://localhost:8080` to see the simulation locally!
 
-Alternatively, you can use the Live Server extension on VS Code.
+Alternatively, you can use the Live Server extension on VS Code. clone the repository, open it in VS Code, download the Live Server extension, and click `Go Live` on the bottom-right of the window.
 
 
 **Credits:** Templated from a one-phase SPH fluid simulation from https://github.com/mjwatkins2/WebGL-SPH.
