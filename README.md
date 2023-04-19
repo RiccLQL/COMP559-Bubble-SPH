@@ -11,7 +11,7 @@
 
 If you'd like to run the code locally on your computer, follow these steps on a command line interface:
 - `git clone https://github.com/RiccLQL/COMP559-Bubble-SPH`
-- `cd COMP559-BubbleSPH`
+- `cd COMP559-Bubble-SPH`
 - `npm install http-server -g`
 - Make sure you are in the folder of the index.html file, and run `http-server` in the terminal.
 
