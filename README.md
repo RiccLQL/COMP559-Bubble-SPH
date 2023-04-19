@@ -19,7 +19,7 @@ On a command line interface:
 - Make sure you are in the folder of the index.html file, and run `http-server` in the terminal.
 - Visit `http://localhost:8080` to see the simulation locally!
 
-Alternatively, you can use the Live Server extension on VS Code. clone the repository, open it in VS Code, download the Live Server extension, and click `Go Live` on the bottom-right of the window.
+Alternatively, you can use the Live Server extension on VS Code. Clone the repository, open it in VS Code, download the Live Server extension, and click `Go Live` on the bottom-right of the window.
 
 
 **Credits:** Templated from a one-phase SPH fluid simulation from https://github.com/mjwatkins2/WebGL-SPH.
